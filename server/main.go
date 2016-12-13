@@ -191,9 +191,7 @@ func HomePageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, ok = token.(*oauth.AccessToken)
-
-	if ok {
+	if _, ok = token.(*oauth.AccessToken); ok {
 		// Already authenticated
 		http.Redirect(w, r, "/stream", http.StatusFound)
 	} else {
@@ -253,7 +251,6 @@ func OauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		token,
 		verificationCode,
 	)
-
 	if err != nil {
 		log.Print(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
