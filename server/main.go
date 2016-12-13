@@ -132,7 +132,7 @@ func StreamHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer resp.Body.Close()
 
-	body_reader := bufio.NewReader(resp.Body)
+	bodyReader := bufio.NewReader(resp.Body)
 
 	fmt.Println("Parsing stream")
 
@@ -140,7 +140,7 @@ func StreamHandler(w http.ResponseWriter, r *http.Request) {
 		var part []byte //Part of line
 		var prefix bool //Flag. Readln readed only part of line.
 
-		part, prefix, err := body_reader.ReadLine()
+		part, prefix, err := bodyReader.ReadLine()
 		if err != nil {
 			break
 		}
@@ -152,7 +152,7 @@ func StreamHandler(w http.ResponseWriter, r *http.Request) {
 		buffer := append([]byte(nil), part...)
 
 		for prefix && err == nil {
-			part, prefix, err = body_reader.ReadLine()
+			part, prefix, err = bodyReader.ReadLine()
 			buffer = append(buffer, part...)
 		}
 		if err != nil {
@@ -176,9 +176,6 @@ func StreamHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func HomePageHandler(w http.ResponseWriter, r *http.Request) {
-	notAuthenticatedTemplate.Execute(w, nil)
-	return
-
 	// Check if access token is already present in session cookie.
 	session, err := store.Get(r, cookieKey)
 	if err != nil {
@@ -194,14 +191,11 @@ func HomePageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, ok := token.(*oauth.AccessToken)
+	_, ok = token.(*oauth.AccessToken)
 
 	if ok {
 		// Already authenticated
-		fmt.Println("### Existing access token discovered")
-		fmt.Printf("%v\n", accessToken)
-
-		// TODO: Redirect to web application
+		http.Redirect(w, r, "/stream", http.StatusFound)
 	} else {
 		log.Println(
 			"Access token retrieved from secure cookie " +
@@ -273,39 +267,6 @@ func OauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
-	// DEBUG
-	fmt.Println("#### Access token")
-	fmt.Printf("%v\n", accessToken)
-
-	// client, err := c.MakeHttpClient(accessToken)
-
-	// Perform twitter api request
-	// if false {
-	// 	twitterEndPoint := "https://api.twitter.com/1.1/application/rate_limit_status.json"
-	// 	req, err := http.NewRequest("GET", twitterEndPoint, nil)
-	// 	if err != nil {
-	// 		log.Print(err)
-	// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	}
-
-	// 	resp, err := client.Do(req)
-	// 	if err != nil {
-	// 		log.Fatal(err, resp)
-	// 	}
-
-	// 	defer resp.Body.Close()
-	// 	respBody, err := ioutil.ReadAll(resp.Body)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-
-	// 	fmt.Println("response Status:", resp.Status)
-	// 	fmt.Println("response Headers:", resp.Header)
-	// 	fmt.Println(string(respBody))
-	// } else {
-
-	// }
 
 	http.Redirect(w, r, "/stream", http.StatusFound)
 }
