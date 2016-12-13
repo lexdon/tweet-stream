@@ -1,3 +1,9 @@
+# TODO
+
+- Create Websocket listener when clicking "stream" button on Stream-page
+- Render streamed tweets
+- Implement filter mechanism
+
 # Installation instructions
 
 These instructions assume a Windows environment (using PowerShell).
