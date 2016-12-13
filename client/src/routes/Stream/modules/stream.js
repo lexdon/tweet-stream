@@ -6,9 +6,9 @@ export const COUNTER_INCREMENT = 'COUNTER_INCREMENT'
 // ------------------------------------
 // Actions
 // ------------------------------------
-export function increment(value = 1) {
+export function stream(value = '') {
   return {
-    type    : COUNTER_INCREMENT,
+    type    : STREAM_TWEETS,
     payload : value
   }
 }
@@ -33,8 +33,7 @@ export const doubleAsync = () => {
 }
 
 export const actions = {
-  increment,
-  doubleAsync
+  stream
 }
 
 // ------------------------------------
@@ -48,7 +47,7 @@ const ACTION_HANDLERS = {
 // Reducer
 // ------------------------------------
 const initialState = 0
-export default function counterReducer (state = initialState, action) {
+export default function streamReducer (state = initialState, action) {
   const handler = ACTION_HANDLERS[action.type]
 
   return handler ? handler(state, action) : state

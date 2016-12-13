@@ -1,4 +1,48 @@
-# Environment variables
+# Installation instructions
+
+These instructions assume a Windows environment (using PowerShell).
+
+## Client
+
+### Dependencies
+
+- node 7.1.0
+- npm 4.0.3
+
+### How to install
+
+```
+cd .\client
+npm install
+```
+
+### Run
+
+```
+cd .\client
+npm start
+```
+
+## Server
+
+### Dependencies
+
+- go 1.7.3
+
+### How to install
+
+```
+go get -u github.com/gorilla/mux
+go get -u github.com/gorilla/sessions
+go get -u github.com/gorilla/websocket
+go get -u github.com/mrjones/oauth
+```
+
+# How to run
+
+## Environment variables
+
+The following environment variables need to be set:
 
 <table>
   <thead>
@@ -23,12 +67,37 @@
   </tbody>
 </table>
 
+## Commands
+
+```
+cd .\server
+go run .\main.go
+```
+
+## Client
+
+```
+cd .\client
+go run .\main.go
+```
+
+## Server
+
+```
+cd .\server
+go run .\main.go
+```
+
 # Challenges
 
 - Can get a firehose of tweets depending on what you're tracking
 
 # Remaining work before production ready
 
+- Creater Docker development image
+- Create Docker production image
+- Vendor Go dependencies (with e.g. glide, gb)
+- Write tests
 - Run load tests with `-race` enabled
 - Implement persistent session storage (e.g. Redis) & CSRF protection (e.g. gorilla/csrf)
 - Implement Twitter auth in popup 

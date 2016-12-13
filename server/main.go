@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/gob"
 	"flag"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/gorilla/websocket"
 	"github.com/mrjones/oauth"
 )
 
@@ -63,6 +63,11 @@ Auth w/ Twitter:
 
 var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_SECRET")))
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
 func init() {
 	flag.IntVar(&port, "port", 8080, "port to listen to")
 
@@ -74,9 +79,9 @@ func init() {
 func main() {
 	r := mux.NewRouter()
 
-	// r.Handle("/", http.FileServer(http.Dir("static")))
+	//r.Handle("/", http.FileServer(http.Dir("../client/static")))
 	r.HandleFunc("/", HomePageHandler)
-	r.HandleFunc("/stream", StreamHandler)
+	r.HandleFunc("/ws", StreamHandler)
 	r.HandleFunc("/authorize", AuthorizeHandler)
 	r.HandleFunc("/oauth_callback", OauthCallbackHandler)
 	server := &http.Server{Handler: r}
@@ -89,89 +94,6 @@ func main() {
 	}
 	if err := server.Serve(listener); nil != err {
 		log.Fatalln(err)
-	}
-}
-
-func StreamHandler(w http.ResponseWriter, r *http.Request) {
-	// Check if access token is already present in session cookie.
-	session, err := store.Get(r, cookieKey)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	token, ok := session.Values["access_token"]
-	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	accessToken, ok := token.(*oauth.AccessToken)
-	if !ok {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// We have an access token and can attempt to create the stream
-	// TODO: Get track parameter from query string
-	streamEndpoint := "https://stream.twitter.com/1.1/statuses/filter.json?track=porsche"
-
-	req, err := http.NewRequest("GET", streamEndpoint, nil)
-	if err != nil {
-		log.Print(err)
-		// TODO: React correctly to different status codes
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	client, err := c.MakeHttpClient(accessToken)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err, resp)
-	}
-
-	defer resp.Body.Close()
-
-	bodyReader := bufio.NewReader(resp.Body)
-
-	fmt.Println("Parsing stream")
-
-	for {
-		var part []byte //Part of line
-		var prefix bool //Flag. Readln readed only part of line.
-
-		part, prefix, err := bodyReader.ReadLine()
-		if err != nil {
-			break
-		}
-
-		if len(part) == 0 {
-			continue
-		}
-
-		buffer := append([]byte(nil), part...)
-
-		for prefix && err == nil {
-			part, prefix, err = bodyReader.ReadLine()
-			buffer = append(buffer, part...)
-		}
-		if err != nil {
-			break
-		}
-
-		tweet := &Tweet{
-			Body: string(buffer),
-		}
-
-		message := &Message{
-			Response: resp,
-			Tweet:    tweet,
-		}
-
-		//ch <- message
-
-		fmt.Println("New message received")
-		fmt.Printf("%v\n", message)
 	}
 }
 
@@ -193,7 +115,9 @@ func HomePageHandler(w http.ResponseWriter, r *http.Request) {
 
 	if _, ok = token.(*oauth.AccessToken); ok {
 		// Already authenticated
-		http.Redirect(w, r, "/stream", http.StatusFound)
+		fmt.Println("### Aleady authenticated, redirecting")
+		//http.Error(w, "error string", http.StatusNotFound)
+		http.Redirect(w, r, "http://localhost:3000/counter", http.StatusFound)
 	} else {
 		log.Println(
 			"Access token retrieved from secure cookie " +
@@ -265,5 +189,5 @@ func OauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	http.Redirect(w, r, "/stream", http.StatusFound)
+	http.Redirect(w, r, "http://localhost:3000/counter", http.StatusFound)
 }
