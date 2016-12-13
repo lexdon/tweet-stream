@@ -40,13 +40,26 @@ export const actions = {
 // Action Handlers
 // ------------------------------------
 const ACTION_HANDLERS = {
-  [COUNTER_INCREMENT] : (state, action) => state + action.payload
+  [STREAM_TWEETS] : (state, action) => {
+      if (!state.streaming) {
+          // TODO: Create new websocket connection
+      }
+
+      return {
+          tweets: state.tweets,
+          streaming: true
+      }
+  }
 }
 
 // ------------------------------------
 // Reducer
 // ------------------------------------
-const initialState = 0
+const initialState = {
+    tweets: [],
+    streaming: false
+}
+
 export default function streamReducer (state = initialState, action) {
   const handler = ACTION_HANDLERS[action.type]
 

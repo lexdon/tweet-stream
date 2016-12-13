@@ -1,8 +1,9 @@
 import { connect } from 'react-redux'
 import Stream from '../components/Stream'
+import { stream } from '../modules/stream'
 
 const mapDispathToProps = {
-
+    stream
 }
 
 const mapStateToProps = (state) => ({
