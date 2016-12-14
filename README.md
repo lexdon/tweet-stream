@@ -1,5 +1,6 @@
 # TODO
 
+- Find out how too serve the web app from the Go server without routing issues
 - Create Websocket listener when clicking "stream" button on Stream-page
 - Render streamed tweets
 - Implement filter mechanism
@@ -77,21 +78,7 @@ The following environment variables need to be set:
 
 ```
 cd .\server
-go run .\main.go
-```
-
-## Client
-
-```
-cd .\client
-go run .\main.go
-```
-
-## Server
-
-```
-cd .\server
-go run .\main.go
+go run .\main.go .\stream.go
 ```
 
 # Challenges

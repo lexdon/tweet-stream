@@ -1,9 +1,9 @@
 import { connect } from 'react-redux'
 import Stream from '../components/Stream'
-import { stream } from '../modules/stream'
+import { openTweetStream } from '../modules/stream'
 
 const mapDispathToProps = {
-    stream
+    openTweetStream
 }
 
 const mapStateToProps = (state) => ({

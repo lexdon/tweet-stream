@@ -34,12 +34,14 @@ func StreamHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, ok := session.Values["access_token"]
 	if !ok {
+		log.Println("No access token found in session")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	accessToken, ok := token.(*oauth.AccessToken)
 	if !ok {
+		log.Println("Unable to cast token to *oauth.AccessToken")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -47,6 +49,7 @@ func StreamHandler(w http.ResponseWriter, r *http.Request) {
 	// Upgrade to WebSocket connection
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		log.Println(err)
 		log.Println(err.Error())
 		return
 	}

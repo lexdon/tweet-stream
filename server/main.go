@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"html/template"
 	"log"
-	"net"
 	"net/http"
 	"os"
 
@@ -79,22 +78,14 @@ func init() {
 func main() {
 	r := mux.NewRouter()
 
-	//r.Handle("/", http.FileServer(http.Dir("../client/static")))
 	r.HandleFunc("/", HomePageHandler)
+	r.Handle("/demo/", http.StripPrefix("/demo/", http.FileServer(http.Dir("../client/dist"))))
 	r.HandleFunc("/ws", StreamHandler)
 	r.HandleFunc("/authorize", AuthorizeHandler)
 	r.HandleFunc("/oauth_callback", OauthCallbackHandler)
-	server := &http.Server{Handler: r}
 
 	fmt.Println("Listening on port", port)
-
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if nil != err {
-		log.Fatalln(err)
-	}
-	if err := server.Serve(listener); nil != err {
-		log.Fatalln(err)
-	}
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
 }
 
 func HomePageHandler(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +108,7 @@ func HomePageHandler(w http.ResponseWriter, r *http.Request) {
 		// Already authenticated
 		fmt.Println("### Aleady authenticated, redirecting")
 		//http.Error(w, "error string", http.StatusNotFound)
-		http.Redirect(w, r, "http://localhost:3000/counter", http.StatusFound)
+		http.Redirect(w, r, "/demo/stream", http.StatusFound)
 	} else {
 		log.Println(
 			"Access token retrieved from secure cookie " +
@@ -189,5 +180,5 @@ func OauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	http.Redirect(w, r, "http://localhost:3000/counter", http.StatusFound)
+	http.Redirect(w, r, "/demo/stream", http.StatusFound)
 }

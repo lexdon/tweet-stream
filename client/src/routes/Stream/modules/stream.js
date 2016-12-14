@@ -1,14 +1,14 @@
 // ------------------------------------
 // Constants
 // ------------------------------------
-export const COUNTER_INCREMENT = 'COUNTER_INCREMENT'
+export const OPEN_TWEET_STREAM = 'OPEN_TWEET_STREAM'
 
 // ------------------------------------
 // Actions
 // ------------------------------------
-export function stream(value = '') {
+export function openTweetStream(value = '') {
   return {
-    type    : STREAM_TWEETS,
+    type    : OPEN_TWEET_STREAM,
     payload : value
   }
 }
@@ -33,22 +33,35 @@ export const doubleAsync = () => {
 }
 
 export const actions = {
-  stream
+  openTweetStream
 }
 
 // ------------------------------------
 // Action Handlers
 // ------------------------------------
 const ACTION_HANDLERS = {
-  [STREAM_TWEETS] : (state, action) => {
-      if (!state.streaming) {
-          // TODO: Create new websocket connection
+    [OPEN_TWEET_STREAM] : (state, action) => {
+    if (!state.streaming) {
+      var exampleSocket = new WebSocket("ws://www.localhost:8080/ws");
+      exampleSocket.onopen = function (event) {
+        console.log("Connection open!")
+      };
+      
+      exampleSocket.onmessage = function(event) {
+        // TODO: Trigger action
+        console.log("Received data!")
+        console.log(event.data);
       }
 
+      // TODO: Implement ping/pong
+
       return {
-          tweets: state.tweets,
-          streaming: true
+        tweets: state.tweets,
+        streaming: true
       }
+    }
+
+    return state    
   }
 }
 
