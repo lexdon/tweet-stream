@@ -79,6 +79,8 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", HomePageHandler)
+
+	// TODO: Wrap in session check handler
 	r.Handle("/demo/", http.StripPrefix("/demo/", http.FileServer(http.Dir("../client/dist"))))
 	r.HandleFunc("/ws", StreamHandler)
 	r.HandleFunc("/authorize", AuthorizeHandler)
