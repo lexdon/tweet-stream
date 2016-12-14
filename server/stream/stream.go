@@ -1,3 +1,5 @@
+package stream
+
 package main
 
 import (
@@ -22,6 +24,11 @@ const (
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
 )
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 func StreamHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if access token is already present in session cookie.

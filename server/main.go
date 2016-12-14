@@ -1,186 +1,154 @@
-// Based on https://github.com/rodreegez/go-signin-with-twitter/blob/master/server.go
-// and https://github.com/NOX73/go-twitter-stream-api/blob/master/twitter_api.go
+// Based on https://github.com/dghubble/gologin/tree/master/examples/twitter
 
 package main
 
 import (
-	"encoding/gob"
-	"flag"
 	"fmt"
-	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
-	"github.com/gorilla/websocket"
-	"github.com/mrjones/oauth"
+	"github.com/dghubble/ctxh"
+	"github.com/dghubble/gologin/twitter"
+	"github.com/dghubble/oauth1"
+	twitterOAuth1 "github.com/dghubble/oauth1/twitter"
+	"github.com/dghubble/sessions"
+	"golang.org/x/net/context"
 )
 
-type Message struct {
-	Error    error
-	Response *http.Response
-	Tweet    *Tweet
+// Config configures the main ServeMux.
+type Config struct {
+	TwitterConsumerKey    string
+	TwitterConsumerSecret string
+	Port                  string
 }
 
-type TweetJSON struct {
-	Text string
-	User struct {
-		Id                      int
-		Screen_name             string
-		Name                    string
-		Description             string
-		Profile_image_url_https string
-	}
-}
+var sessionStore = sessions.NewCookieStore([]byte(sessionSecret), nil)
 
-type Tweet struct {
-	Body string
-	JSON *TweetJSON
-}
-
-var port int
-var cookieKey string = "tweet-stream"
-
-var c = oauth.NewConsumer(
-	os.Getenv("TWITTER_KEY"),
-	os.Getenv("TWITTER_SECRET"),
-	oauth.ServiceProvider{
-		RequestTokenUrl:   "https://api.twitter.com/oauth/request_token",
-		AuthorizeTokenUrl: "https://api.twitter.com/oauth/authorize",
-		AccessTokenUrl:    "https://api.twitter.com/oauth/access_token",
-	},
+const (
+	sessionName    = "tweet-stream"
+	sessionSecret  = "very secret session secret"
+	sessionUserKey = "twitterID"
 )
-
-var notAuthenticatedTemplate = template.Must(template.New("").Parse(`
-<html><body>
-Auth w/ Twitter:
-<form action="/authorize" method="POST"><input type="submit" value="Ok, authorize this app with my id"/></form>
-</body></html>
-`))
-
-var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_SECRET")))
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
-func init() {
-	flag.IntVar(&port, "port", 8080, "port to listen to")
-
-	// Needed to store structs in secure cookie
-	gob.Register(&oauth.RequestToken{})
-	gob.Register(&oauth.AccessToken{})
-}
 
 func main() {
-	r := mux.NewRouter()
-
-	r.HandleFunc("/", HomePageHandler)
-
-	// TODO: Wrap in session check handler
-	r.Handle("/demo/", http.StripPrefix("/demo/", http.FileServer(http.Dir("../client/dist"))))
-	r.HandleFunc("/ws", StreamHandler)
-	r.HandleFunc("/authorize", AuthorizeHandler)
-	r.HandleFunc("/oauth_callback", OauthCallbackHandler)
-
-	fmt.Println("Listening on port", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
-}
-
-func HomePageHandler(w http.ResponseWriter, r *http.Request) {
-	// Check if access token is already present in session cookie.
-	session, err := store.Get(r, cookieKey)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	// Environment variables
+	config := &Config{
+		TwitterConsumerKey:    os.Getenv("TWITTER_CONSUMER_KEY"),
+		TwitterConsumerSecret: os.Getenv("TWITTER_CONSUMER_SECRET"),
+		Port: os.Getenv("TWEET_STREAM_SERVER_PORT"),
 	}
 
-	token, ok := session.Values["access_token"]
+	// Validate presence of config values
+	if config.TwitterConsumerKey == "" {
+		log.Fatal("TWITTER_CONSUMER_KEY env variable not defined")
+	}
+	if config.TwitterConsumerSecret == "" {
+		log.Fatal("TWITTER_CONSUMER_SECRET env variable not defined")
+	}
 
-	if !ok {
-		// Not authenticated, show login button
-		notAuthenticatedTemplate.Execute(w, nil)
+	// TODO: Better port validation
+	if config.Port == "" {
+		config.Port = "8080"
+	}
+
+	// Start server
+	log.Printf("Starting server listening on %s\n", config.Port)
+	err := http.ListenAndServe(fmt.Sprintf(":%s", config.Port), New(config))
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+
+	// authorizedAdapter := auth.Authorize([]byte(sessionSecret))
+
+	// r.HandleFunc("/", HomePageHandler)
+
+	// // TODO: Wrap in session check handler
+	// r.Handle("/demo/", http.StripPrefix("/demo/", http.FileServer(http.Dir("../client/dist"))))
+	// r.HandleFunc("/ws", StreamHandler)
+	// r.HandleFunc("/authorize", AuthorizeHandler)
+	// r.HandleFunc("/oauth_callback", OauthCallbackHandler)
+}
+
+// New returns a new ServeMux with app routes.
+func New(config *Config) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", welcomeHandler)
+	mux.Handle("/stream", requireLogin(http.HandlerFunc(streamHandler)))
+	// mux.HandleFunc("/logout", logoutHandler)
+	// 1. Register Twitter login and callback handlers
+	oauth1Config := &oauth1.Config{
+		ConsumerKey:    config.TwitterConsumerKey,
+		ConsumerSecret: config.TwitterConsumerSecret,
+		CallbackURL:    fmt.Sprintf("http://localhost:%s/twitter/callback", config.Port),
+		Endpoint:       twitterOAuth1.AuthorizeEndpoint,
+	}
+	mux.Handle("/twitter/login", ctxh.NewHandler(twitter.LoginHandler(oauth1Config, nil)))
+	mux.Handle("/twitter/callback", ctxh.NewHandler(twitter.CallbackHandler(oauth1Config, issueSession(), nil)))
+	return mux
+}
+
+// issueSession issues a cookie session after successful Twitter login
+func issueSession() ctxh.ContextHandler {
+	fn := func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+		twitterUser, err := twitter.UserFromContext(ctx)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// 2. Implement a success handler to issue some form of session
+		session := sessionStore.New(sessionName)
+		session.Values[sessionUserKey] = twitterUser.ID
+		session.Save(w)
+		http.Redirect(w, req, "/stream", http.StatusFound)
+	}
+	return ctxh.ContextHandlerFunc(fn)
+}
+
+// welcomeHandler shows a welcome message and login button.
+func welcomeHandler(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Path != "/" {
+		http.NotFound(w, req)
 		return
 	}
-
-	if _, ok = token.(*oauth.AccessToken); ok {
-		// Already authenticated
-		fmt.Println("### Aleady authenticated, redirecting")
-		//http.Error(w, "error string", http.StatusNotFound)
-		http.Redirect(w, r, "/demo/stream", http.StatusFound)
-	} else {
-		log.Println(
-			"Access token retrieved from secure cookie " +
-				"cannot be casted to type *oauth.AccessToken")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
-}
-
-func AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
-	tokenUrl := fmt.Sprintf("http://%s/oauth_callback", r.Host)
-
-	requestToken, requestUrl, err := c.GetRequestTokenAndUrl(tokenUrl)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	session, err := store.Get(r, cookieKey)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	session.Values[requestToken.Token] = requestToken
-	err = session.Save(r, w)
-	if err != nil {
-		log.Print(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	// Redirect user to Twitter sign in
-	http.Redirect(w, r, requestUrl, http.StatusFound)
-}
-
-func OauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
-	// Get the session cookie
-	session, _ := store.Get(r, cookieKey)
-
-	// Retrieve query string parameters
-	values := r.URL.Query()
-	verificationCode := values.Get("oauth_verifier")
-	tokenKey := values.Get("oauth_token")
-
-	// Retrieve the request token from the session cookie
-	token, ok := session.Values[tokenKey].(*oauth.RequestToken)
-
-	if !ok {
-		log.Println("")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	if isAuthenticated(req) {
+		http.Redirect(w, req, "/stream", http.StatusFound)
 		return
 	}
+	page, _ := ioutil.ReadFile("index.html")
+	fmt.Fprintf(w, string(page))
+}
 
-	// Request an access token
-	accessToken, err := c.AuthorizeToken(
-		token,
-		verificationCode,
-	)
-	if err != nil {
-		log.Print(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+// streamHandler shows protected user content.
+func streamHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprint(w, `<p>You are logged in!</p><form action="/logout" method="post"><input type="submit" value="Logout"></form>`)
+}
+
+// logoutHandler destroys the session on POSTs and redirects to home.
+func logoutHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method == "POST" {
+		sessionStore.Destroy(w, sessionName)
 	}
+	http.Redirect(w, req, "/", http.StatusFound)
+}
 
-	// Store access token for future requests
-	session.Values["access_token"] = accessToken
-
-	err = session.Save(r, w)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+// requireLogin redirects unauthenticated users to the login route.
+func requireLogin(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, req *http.Request) {
+		if !isAuthenticated(req) {
+			http.Redirect(w, req, "/", http.StatusFound)
+			return
+		}
+		next.ServeHTTP(w, req)
 	}
+	return http.HandlerFunc(fn)
+}
 
-	http.Redirect(w, r, "/demo/stream", http.StatusFound)
+// isAuthenticated returns true if the user has a signed session cookie.
+func isAuthenticated(req *http.Request) bool {
+	if _, err := sessionStore.Get(req, sessionName); err == nil {
+		return true
+	}
+	return false
 }

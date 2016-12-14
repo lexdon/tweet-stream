@@ -43,6 +43,10 @@ go get -u github.com/gorilla/mux
 go get -u github.com/gorilla/sessions
 go get -u github.com/gorilla/websocket
 go get -u github.com/mrjones/oauth
+go get -u github.com/dghubble/go-twitter/twitter
+go get -u github.com/dghubble/oauth1
+go get -u github.com/dghubble/gologin
+go get -u github.com/dghubble/sessions
 ```
 
 # How to run
