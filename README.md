@@ -107,6 +107,7 @@ Then visit [localhost:8080](localhost:8080)
 - Implement rate limiting on the server for "firehose" Twitter topics
 - Implement max length for tweets array on client to prevent rendering performance issues
 - Use reselect to limit processing of existing tweets when a new tweet arrives on the client
+- Add the ability to choose what topic to track on the client (e.g. by specifying a query string parameter on the stream request to the server)
 
 # Nice to have 
 - Implement Twitter auth in popup
