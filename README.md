@@ -101,4 +101,8 @@ Then visit [localhost:8080](localhost:8080)
 - Write tests
 - Run load tests with `-race` enabled
 - Implement persistent session storage (e.g. Redis) & CSRF protection (e.g. gorilla/csrf)
+- Take a closer look at the use of go channels and make sure we don't end up leaking goroutines
+- Remove unsafe casts (use context and middleware to propagate session state instead)
+
+# Nice to have 
 - Implement Twitter auth in popup
