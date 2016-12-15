@@ -10,8 +10,8 @@ function streamApp(state = initialState, action) {
         case ADD_TWEET:
             return Object.assign({}, state, {
                 tweets: [
-                    ...state.tweets,
-                    action.tweet
+                    action.tweet,
+                    ...state.tweets
                 ]
             })
         case FILTER_CONTAINS: 
