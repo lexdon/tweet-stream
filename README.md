@@ -51,21 +51,21 @@ The following environment variables need to be set:
 <table>
   <thead>
     <tr>
-      <th>Environment variable<th>
+      <th>Environment variable</th>
       <th>Description</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code>TWITTER_CONSUMER_KEY</code><td>
+      <td><code>TWITTER_CONSUMER_KEY</code></td>
       <td>The Twitter consumer key</td>
     </tr>
     <tr>
-      <td><code>TWITTER_CONSUMER_SECRET</code><td>
+      <td><code>TWITTER_CONSUMER_SECRET</code></td>
       <td>The Twitter consumer secret</td>
     </tr>
     <tr>
-      <td><code>TWEET_STREAM_TRACK</code><td>
+      <td><code>TWEET_STREAM_TRACK</code></td>
       <td>Which topic to track in the stream</td>
     </tr>
     <tr>
