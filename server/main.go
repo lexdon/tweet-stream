@@ -77,7 +77,6 @@ func main() {
 func New(config *Config) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", welcomeHandler)
-	//mux.Handle("/stream", requireLogin(http.HandlerFunc(streamHandler)))
 	mux.Handle("/app", requireLogin(http.StripPrefix("/app", http.FileServer(http.Dir("../client/build")))))
 
 	// Easy fix to serve static assets for the web app's index.html
