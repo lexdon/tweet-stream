@@ -21,7 +21,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Config configures the main ServeMux.
+// Config specifies the configuration of the server application
 type Config struct {
 	TwitterConsumerKey    string
 	TwitterConsumerSecret string
