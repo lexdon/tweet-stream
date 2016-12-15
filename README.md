@@ -103,6 +103,10 @@ Then visit [localhost:8080](localhost:8080)
 - Implement persistent session storage (e.g. Redis) & CSRF protection (e.g. gorilla/csrf)
 - Take a closer look at the use of go channels and make sure we don't end up leaking goroutines
 - Remove unsafe casts (use context and middleware to propagate session state instead)
+- Add EventSource polyfill to client
+- Implement rate limiting on the server for "firehose" Twitter topics
+- Implement max length for tweets array on client to prevent rendering performance issues
+- Use reselect to limit processing of existing tweets when a new tweet arrives on the client
 
 # Nice to have 
 - Implement Twitter auth in popup
