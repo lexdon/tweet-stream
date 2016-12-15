@@ -97,7 +97,7 @@ func New(config *Config) *http.ServeMux {
 	return mux
 }
 
-// streamHandler streams Twitter updates realtime to the client via SSE
+// streamHandler streams Twitter updates in realtime to the client via SSE
 func streamHandler(rw http.ResponseWriter, req *http.Request) {
 	// Get session values
 	session, err := sessionStore.Get(req, sessionName)
