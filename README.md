@@ -1,9 +1,12 @@
-# TODO
+# Description
 
-- Find out how too serve the web app from the Go server without routing issues
-- Create Websocket listener when clicking "stream" button on Stream-page
-- Render streamed tweets
-- Implement filter mechanism
+This application is a proof of concept utilizing the Public streams part of the Twitter Streaming APIs to stream all new tweets regarding a specific topic (defined by the value of the environment variable `TWEET_STREAM_TRACK`).
+
+These updates are then streamed to a React client using Server-Sent Events. On the client, you're able to filter Tweets based on their contents (a simple contains text filter for now).
+
+The application uses "Sign in with Twitter". You therefore need a valid Twitter user account to access the Twitter streaming web application.
+
+Additionally, you need to set the `TWITTER_CONSUMER_KEY` and `TWITTER_CONSUMER_SECRET` environment variables to enable the server to communicate with the Twitter API. These can be obtained at [https://apps.twitter.com/](https://apps.twitter.com/).
 
 # Installation instructions
 
@@ -23,13 +26,6 @@ cd .\client
 npm install
 ```
 
-### Run
-
-```
-cd .\client
-npm start
-```
-
 ## Server
 
 ### Dependencies
@@ -39,10 +35,7 @@ npm start
 ### How to install
 
 ```
-go get -u github.com/gorilla/mux
-go get -u github.com/gorilla/sessions
-go get -u github.com/gorilla/websocket
-go get -u github.com/mrjones/oauth
+go get -u golang.org/x/net/context
 go get -u github.com/dghubble/go-twitter/twitter
 go get -u github.com/dghubble/oauth1
 go get -u github.com/dghubble/gologin
@@ -64,26 +57,34 @@ The following environment variables need to be set:
   </thead>
   <tbody>
     <tr>
-      <td><code>TWITTER_KEY</code><td>
+      <td><code>TWITTER_CONSUMER_KEY</code><td>
       <td>The Twitter consumer key</td>
     </tr>
     <tr>
-      <td><code>TWITTER_SECRET</code><td>
+      <td><code>TWITTER_CONSUMER_SECRET</code><td>
       <td>The Twitter consumer secret</td>
     </tr>
     <tr>
-      <td><code>SESSION_SECRET</code><td>
-      <td>Secret used to encrypt/decrypt secure session cookies</td>
+      <td><code>TWEET_STREAM_TRACK</code><td>
+      <td>Which topic to track in the stream</td>
+    </tr>
+    <tr>
+      <td><code>TWEET_STREAM_SERVER_PORT</code></td>
+      <td>Port to expose the server on (optional)</td>
     </tr>
   </tbody>
 </table>
 
-## Commands
+## Build & run
 
 ```
-cd .\server
-go run .\main.go .\stream.go
+cd .\client 
+npm run build
+cd ..\server
+go run .\main.go
 ```
+
+Then visit [localhost:8080](localhost:8080)
 
 # Challenges
 
@@ -93,15 +94,11 @@ go run .\main.go .\stream.go
 
 - Creater Docker development image
 - Create Docker production image
+- One step build
+- Nicer GUI
+- More advanced filtering/sorting
 - Vendor Go dependencies (with e.g. glide, gb)
 - Write tests
 - Run load tests with `-race` enabled
 - Implement persistent session storage (e.g. Redis) & CSRF protection (e.g. gorilla/csrf)
-- Implement Twitter auth in popup 
-    - [http://stackoverflow.com/questions/1878529/twitter-oauth-via-a-popup](http://stackoverflow.com/questions/1878529/twitter-oauth-via-a-popup)
-    - [http://clarkdave.net/2012/10/2012-10-30-twitter-oauth-authorisation-in-a-popup/](http://clarkdave.net/2012/10/2012-10-30-twitter-oauth-authorisation-in-a-popup/)
-
-# Nice to have
-
-- One step build
-- Nicer GUI
+- Implement Twitter auth in popup
