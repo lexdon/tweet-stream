@@ -139,18 +139,6 @@ func streamHandler(rw http.ResponseWriter, req *http.Request) {
 
 	fmt.Println("Twitter client created")
 
-	// Do test Request
-	// search, _, err := twitterClient.Search.Tweets(&twitter.SearchTweetParams{
-	// 	Query: "gopher",
-	// })
-	// if err != nil {
-	// 	log.Println(err.Error())
-	// 	http.Error(rw, err.Error(), http.StatusInternalServerError)
-	// }
-	// for _, tweet := range search.Statuses {
-	// 	fmt.Println(tweet.Text)
-	// }
-
 	// Convenience Demux demultiplexed stream messages
 	demux := twitter.NewSwitchDemux()
 	demux.Tweet = func(tweet *twitter.Tweet) {
@@ -247,11 +235,6 @@ func welcomeHandler(w http.ResponseWriter, req *http.Request) {
 	page, _ := ioutil.ReadFile("index.html")
 	fmt.Fprintf(w, string(page))
 }
-
-// streamHandler shows protected user content.
-// func streamHandler(w http.ResponseWriter, req *http.Request) {
-// 	fmt.Fprint(w, `<p>You are logged in!</p><form action="/logout" method="post"><input type="submit" value="Logout"></form>`)
-// }
 
 // logoutHandler destroys the session on POSTs and redirects to home.
 func logoutHandler(w http.ResponseWriter, req *http.Request) {
