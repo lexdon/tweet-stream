@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -64,6 +65,11 @@ func main() {
 	if config.Port == "" {
 		config.Port = "8080"
 	}
+
+	// Launch pprof server
+	go func() {
+		log.Println(http.ListenAndServe(":6060", nil))
+	}()
 
 	// Start server
 	log.Printf("Starting server listening on %s\n", config.Port)
