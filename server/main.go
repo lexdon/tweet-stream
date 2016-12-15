@@ -39,12 +39,9 @@ const (
 	sessionAccessSecretKey = "twitterAccessSecret"
 )
 
-// DEVELOPMENT ONLY VARIABLES
 var (
 	config *Config
 )
-
-// END DEVELOPMENT ONLY VARIABLES
 
 func main() {
 	// Environment variables
