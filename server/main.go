@@ -88,8 +88,11 @@ func New(config *Config) *http.ServeMux {
 	// Easy fix to serve static assets for the web app's index.html
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("../client/build/static"))))
 
+	// TODO: Require login for /api/stream
 	mux.HandleFunc("/api/stream", streamHandler)
+
 	mux.HandleFunc("/logout", logoutHandler)
+
 	// 1. Register Twitter login and callback handlers
 	oauth1Config := &oauth1.Config{
 		ConsumerKey:    config.TwitterConsumerKey,
@@ -110,6 +113,8 @@ func streamHandler(rw http.ResponseWriter, req *http.Request) {
 		log.Println(err.Error())
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 	}
+
+	// TODO: Remove unsafe cast and propagate these through the context instead
 	accessToken := session.Values[sessionAccessTokenKey].(string)
 	accessSecret := session.Values[sessionAccessSecretKey].(string)
 
